@@ -1,8 +1,5 @@
-from environs import env
-import openai
+from dotenv import load_dotenv
 
 
-def init_api():
-    env.read_env()
-    openai.api_key = env("OPENAI_API_KEY")
-    
+def init_runtime_config():
+    load_dotenv()
