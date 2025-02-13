@@ -5,6 +5,10 @@ from config import init_runtime_config
 
 """
 Before submitting the assignment, describe here in a few sentences what you would have built next if you spent 2 more hours on this project:
+
+My next feature would have been to create a speech interface with the program rather than a CLI program so that
+children would have better time interacting with the software. Further, I would like to somehow automate creating
+a pdf storybook as a potential option for users. 
 """
 
 class Story:
