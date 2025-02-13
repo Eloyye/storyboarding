@@ -3,7 +3,11 @@ Welcome to the [Hippocratic AI](https://www.hippocraticai.com) coding assignment
 
 ## About
 This is a CLI program that allows users to create interactive
-stories
+stories.
+- Allows for users to continue the story
+- Make changes to the story
+- Conclude when story ends
+- Engages with user through asking follow up questions
 
 ## Usage
 - Create virtual environment for python or install uv
