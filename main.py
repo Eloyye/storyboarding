@@ -1,8 +1,6 @@
-import os
 from enum import Enum, auto
 
-from openai import OpenAI
-
+from chat_client import ChatClient
 from config import init_runtime_config
 
 """
@@ -14,31 +12,25 @@ class Story:
     def __init__(self, llm_client=None):
         if not llm_client:
             raise ValueError("No llm client provided")
-        self.llm_client: OpenAI = llm_client
+        self.llm_client: ChatClient = llm_client
 
-    def call_model(self, prompt: str, max_tokens=3000, temperature=0.1) -> str:
-        resp = self.llm_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            stream=False,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-        if not resp.choices:
-            raise ValueError("No response from llm")
-        return resp.choices[0].message.content
+    def call_model(self, prompt: str, is_done=False) -> str:
+        if is_done:
+            response = self.llm_client.client_prompt(prompt, "Conclude the story. Ignore creating the title. Make sure it is a happy ending and perhaps include a moral.")
+            self.llm_client.clear_history()
+            return response
+        return self.llm_client.client_prompt(prompt)
 
 
     def generate_story(self, user_input: str) -> str:
+        self.llm_client.clear_history()
         prompt = f"""
         You are a storytelling assistant. Create a bedtime story for children ages 5–10. 
-        Make sure the story is fun, engaging, and age-appropriate. Include a clear beginning, middle, and happy ending. 
-        Use simple language. Title the story, introduce characters, and include a moral if relevant.
+        Make sure the story is fun, engaging, and age-appropriate. Emphasize interactiveness by asking
+        leading questions that will pique the children's interest like "What do you think happens next?" or 
+        questions that invoke sensory like "What do you suppose caused that noise?". 
+        Use simple language. Title the story, introduce characters, and should lead up to a moral but do not
+        mention a moral.
         
         User request: {user_input}
         
@@ -53,6 +45,7 @@ class StoryCommand(Enum):
     CONTINUE = auto()
     QUIT = auto()
     NEW = auto()
+    END = auto()
 
 def get_string_command(command_str):
     processed_str = command_str.strip().lower()
@@ -61,6 +54,8 @@ def get_string_command(command_str):
             return StoryCommand.FEEDBACK
         case "c" | "continue":
             return StoryCommand.CONTINUE
+        case "e" | "end":
+            return StoryCommand.END
         case "q" | "quit":
             return StoryCommand.QUIT
         case "n" | "new":
@@ -74,9 +69,7 @@ def main():
     user_input = input("What kind of story do you want to hear? (e.g., 'A story about a brave rabbit who saves the day'): ")
 
     # openai client llm
-    client = OpenAI(
-        api_key=os.environ.get("OPENAI_API_KEY"),
-    )
+    client = ChatClient()
     story = Story(llm_client=client)
 
     story_output = story.generate_story(user_input)
@@ -85,12 +78,12 @@ def main():
 
     # main loop to continue the interaction
     while True:
-        command_message = "\nWhat would you like to do? Type a single character\n\nc. continue the story\nf. feedback\nn. new story\nq. quit\n"
+        command_message = "\nWhat would you like to do? Type a single character\n\nc. continue the story\ne. end the story\nf. feedback\nn. new story\nq. quit\n"
         command_str = input(command_message).strip()
         com = get_string_command(command_str) # accept multiple commands
         match com:
             case StoryCommand.FEEDBACK:
-                feedback = input("\nWould you like it to be funnier, shorter, or include a lesson?").strip()
+                feedback = input("\nWould you like it to be funnier, shorter, or include a lesson?\n").strip()
                 print("\nGenerating an updated story...\n")
                 updated_prompt = f"""
                         Based on the previous story, make it {feedback}. Keep it suitable for children ages 5–10.
@@ -98,10 +91,10 @@ def main():
                 updated_story = story.call_model(updated_prompt)
                 print(updated_story)
             case StoryCommand.CONTINUE:
-                feedback = input("What would you like to happen next?\n").strip()
+                prompt = input("What would you like to happen next?\n").strip()
                 print("\nContinuing the story...\n")
                 updated_prompt = f"""
-                                        Continuing from the previous story: {feedback}. Remember, Keep it suitable for children ages 5–10.
+                                        Continuing from the previous story: {prompt}. Remember, Keep it suitable for children ages 5–10.
                                         """
                 updated_story = story.call_model(updated_prompt)
                 print(updated_story)
@@ -109,6 +102,14 @@ def main():
                 new_story_input = input("\n").strip()
                 print("\nCreating a new story\n")
                 updated_story = story.generate_story(new_story_input)
+                print(updated_story)
+            case StoryCommand.END:
+                prompt = input("What would you like to happen next for finale?\n").strip()
+                print("\nConcluding the story...\n")
+                updated_prompt = f"""
+                                Continuing from the previous story: {prompt}. Remember, Keep it suitable for children ages 5–10.
+                                """
+                updated_story = story.call_model(updated_prompt, True)
                 print(updated_story)
             case StoryCommand.QUIT:
                 print("\nGlad you liked it! Sweet dreams!")
