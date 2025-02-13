@@ -5,7 +5,8 @@ Welcome to the [Hippocratic AI](https://www.hippocraticai.com) coding assignment
 This is a CLI program that allows users to create interactive
 stories
 
-# Usage
+## Usage
+- Create virtual environment for python or install uv
 if you have uv:
 ```shell
 uv pip install -r pyproject.toml
@@ -13,4 +14,11 @@ uv pip install -r pyproject.toml
 otherwise:
 ```shell
 pip install -r pyproject.toml
+```
+
+1. Rename .env-example to .env
+2. Fill in OpenAI API
+3. Finally, run the program
+```shell
+python main.py
 ```
